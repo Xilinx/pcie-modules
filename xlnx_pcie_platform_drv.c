@@ -71,6 +71,9 @@
 #define PCIRC_ENC_PARAMS_2                      0x50
 #define PCIRC_RAW_RESOLUTION                    0x54
 #define PCIRC_USECASE_MODE                      0x58
+#define PCIRC_ENC_PARAMS_3                      0x5c
+#define PCIRC_ENC_PARAMS_4                      0x60
+#define PCIRC_ENC_PARAMS_5                      0x64
 #define PCIRC_READ_BUFFER_TRANSFER_DONE_INTR    0x68
 #define PCIRC_WRITE_BUFFER_TRANSFER_DONE_INTR   0x6c
 #define PCIRC_HOST_DONE_INTR                    0x70
@@ -136,6 +139,13 @@
 #define MIN_QP_MASK                             0x3F
 #define MAX_QP_SHIFT                            0x1A
 #define MAX_QP_MASK                             0x3F
+#define CPB_SIZE_SHIFT                          0x0
+#define CPB_SIZE_MASK                           0xFFFF
+#define INITIAL_DELAY_SHIFT                     0x0
+#define INITIAL_DELAY_MASK                      0xFFFF
+#define PERIODICITY_IDR_SHIFT                   0x0
+#define PERIODICITY_IDR_MASK                    0xFFFF
+
 
 #define READ_BUF_HIGH_OFFSET                    0xFFFF0000
 #define WRITE_BUF_HIGH_OFFSET                   0xFFFF0000
@@ -196,6 +206,9 @@ typedef struct enc_params {
 	unsigned int profile;
 	unsigned int min_qp;
 	unsigned int max_qp;
+	unsigned int cpb_size;
+	unsigned int initial_delay;
+	unsigned int periodicity_idr;
 } enc_params;
 
 typedef struct resolution {
@@ -295,6 +308,9 @@ static long pciep_driver_file_ioctl(struct file *file, unsigned int cmd,
 	struct pciep_driver_data *this = file->private_data;
 	unsigned int value;
 	u64 value1;
+	u64 value2;
+	u64 value3;
+	u64 value4;
 	u64 size;
 	struct enc_params params;
 	struct resolution res;
@@ -327,6 +343,13 @@ static long pciep_driver_file_ioctl(struct file *file, unsigned int cmd,
 		params.profile = (value1>>PROFILE_SHIFT) & PROFILE_MASK;
 		params.min_qp = (value1>>MIN_QP_SHIFT) & MIN_QP_MASK;
 		params.max_qp = (value1>>MAX_QP_SHIFT) & MAX_QP_MASK;
+
+		value2 = reg_read(this, PCIRC_ENC_PARAMS_3);
+		params.cpb_size = (value2>>CPB_SIZE_SHIFT) & CPB_SIZE_MASK;
+		value3 = reg_read(this, PCIRC_ENC_PARAMS_4);
+		params.initial_delay = (value3>>INITIAL_DELAY_SHIFT) & INITIAL_DELAY_MASK;
+		value4 = reg_read(this, PCIRC_ENC_PARAMS_5);
+		params.periodicity_idr = (value4>>PERIODICITY_IDR_SHIFT) & PERIODICITY_IDR_MASK;
 		ret = copy_to_user((struct enc_params *) arg, &params, sizeof(params));
 		return ret;
 
